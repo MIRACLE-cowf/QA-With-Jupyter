@@ -1,66 +1,30 @@
-from langchain_community.document_loaders import NotebookLoader
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-
-from CustomHelper.load_model import get_anthropic_model
-
-loader = NotebookLoader(
-	"./src/storm.ipynb",
-	max_output_length=50,
-	remove_newline=True
-)
-
-result = loader.load()
-# print(result[0].page_content)
+from langchain_community.chat_message_histories import ChatMessageHistory
+from load_file import run_load_file
+from qa_chain import get_qa_chain
 
 
-def pretty_print_notebook(notebook_str):
+if __name__ == '__main__':
+	data = run_load_file("./src/")
+	qa_chain = get_qa_chain(data)
+	chat_history = ChatMessageHistory()
+	while True:
 
-	# Split the string into individual cells based on cell type markers
-	cells = notebook_str.strip().split("\n\n")
-	full_content = ""
-	for cell in cells:
-		if cell.startswith("'markdown'"):
-			# Extract and clean markdown content
-			content = cell.split("cell: ")[1]
-			content = content.replace("'['", "").replace("']'", "").replace("', '", "\n")
-			full_content += content + "\n"
+		user_input = input("Question: ")
 
-		elif cell.startswith("'code'"):
-			# Extract and clean code content
-			content = cell.split("cell: ")[1]
-			content = content.replace("'['", "").replace("']'", "").replace("', '", "\n")
-			code_content = "```python" + "\n" + content + "\n" + "```" + "\n"
-			full_content += code_content
-		full_content += "\n"
+		if user_input == "q":
+			print("Bye Bye")
+			break
 
-	return full_content
+		ai_message = ""
+		for chunk in qa_chain.stream({
+			"input": user_input,
+			"chat_history": chat_history.messages,
+		}):
+			ai_message += chunk
+			print(chunk, end="", flush=True)
 
+		print("\n")
+		chat_history.add_user_message(user_input)
+		chat_history.add_ai_message(ai_message)
 
-pretty_notebook = pretty_print_notebook(result[0].page_content)
-
-qa_with_jupyter_prompt = ChatPromptTemplate.from_messages([
-	("system", """You are a senior developer with many years of experience in the coding industry.
-
-Now you have documents written in Jupyter Notebooks that look like this:
-
-<jupyter_document>
-{jupyter_document}
-</jupyter_document>
-
-
-Now your job is to take your time to read and analyze the documentation in that Jupyter notebook, and to respond to the user's questions."""),
-	("human", "{input}")
-])
-llm = get_anthropic_model()
-chain = (
-	qa_with_jupyter_prompt.partial(jupyter_document=pretty_notebook)
-	| llm
-	| StrOutputParser()
-)
-
-for chunk in chain.stream({
-	"input": "What is STORM Architecture?"
-}):
-	print(chunk, end="", flush=True)
 

@@ -10,7 +10,7 @@ load_dotenv()
 def get_anthropic_model(model_name="haiku", temperature=0.3) -> ChatAnthropic:
     """Load the Anthropic model easily."""
     if model_name == 'sonnet':
-        model = "claude-3-sonnet-20240229"
+        model = "claude-3-5-sonnet-20240620"
     elif model_name == 'haiku':
         model = "claude-3-haiku-20240307"
     else:

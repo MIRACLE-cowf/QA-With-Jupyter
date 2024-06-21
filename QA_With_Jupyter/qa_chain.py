@@ -21,7 +21,7 @@ Now your job is to take your time to read and analyze the documentation in that 
 		("human", "{input}")
 	])
 
-	llm = get_anthropic_model(model_name="haiku") # change model name if you want to use more intelligence claude model (haiku, sonnet, opus)
+	llm = get_anthropic_model(model_name="sonnet") # change model name if you want to use more intelligence claude model (haiku, sonnet, opus)
 	# llm = get_openai_model() # change this 'get_openai_model()' if you want to use OpenAI model
 
 	fallback_llm = llm.with_fallbacks([llm] * 5)
